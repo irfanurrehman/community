@@ -3,13 +3,13 @@
 kubernetes-pm is a github team that will help to manage and maintain the project in ways other than just writing code.  Specifically, members of the kubernetes-pm team are
 expected to:
 
-* Add/change routing labels to issues ([sig/, area/](https://github.com/kubernetes/kubernetes/wiki))
+* Add/change routing labels to issues (eg: area/foo, kind/foo, priority/foo, sig/foo)
 * Apply release-note labels to PRs (until that is automated or eliminated)
 * Set the milestone on a PR or issue
 * Assign issues to the correct people for immediate triage/work
 * Assign PRs to be reviewed by the correct people
-* Close duplicate, stale, misplaced issues 
-* Close support issues, with a redirect to stackoverflow
+* Close duplicate, stale, misplaced issues
+* Close support issues, with a redirect to Stack Overflow
 
 They should **NOT**:
 
@@ -17,7 +17,7 @@ They should **NOT**:
 * Apply priority labels to PRs
 * Apply cherrypick labels to PRs
 * Edit text of other people's PRs and issues, including deleting comments
-* Modify anyone else's release note 
+* Modify anyone else's release note
 * Create, edit, delete labels
 * Create, edit, close, delete milestones
 * Create, edit, delete releases
@@ -41,6 +41,6 @@ The following is the provisional process for adding people to the group:
 
 The Contributor Experience working-group leads or Brian Grant (@bgrant0607) will approve or deny your request.
 
-Some prerequisites may need to be completed prior to being added to the github team, such as clarifying relevant policies in our contributor documentation. 
+Some prerequisites may need to be completed prior to being added to the github team, such as clarifying relevant policies in our contributor documentation.
 
 Thanks for helping to manage the project!

@@ -1,16 +1,25 @@
-# Contributing guidelines
+# Contributing to the Community Repo
 
-This project is for documentation about the community. To contribute to one of
-the Kubernetes projects please see the contribution guide for that project.
+Welcome to the Kubernetes Community contributing guide. We are excited about the prospect of you joining our [community](https://github.com/kubernetes/community)!
 
-## How To Contribute
+## Getting Started
 
-The contributions here follow a [pull request](https://help.github.com/articles/using-pull-requests/) model with some additional process.
-The process is as follows:
+We have full documentation on how to get started contributing here: 
 
-1. Submit a pull request with the requested change.
-2. Another person, other than a Special Interest Group (SIG) owner, can mark it Looks Good To Me (LGTM) upon successful review. Otherwise feedback can be given.
-3. A SIG owner can merge someone else's change into their SIG documentation immediate.
-4. Someone cannot immediately merge their own change. To merge your own change wait 24 hours during the week or 72 hours over a weekend. This allows others the opportunity to review a change.
+- [Kubernetes Contributor Guide](http://git.k8s.io/community/contributors/guide) - Main contributor documentation
+- [Contributor Cheat Sheet](https://git.k8s.io/community/contributors/guide/contributor-cheatsheet.md) - Common resources for existing developers
 
-_Note, the SIG Owners decide on the layout for their own sub-directory structure._
+## Mentorship
+
+- [Mentoring Initiatives](https://git.k8s.io/community/mentoring)  - We have a diverse set of mentorship programs available that are always looking for volunteers!
+
+## Contributing to Individual SIGs
+
+Each SIG may or may not have it's own policies for editing their section of this repository.
+
+Edits in SIG sub-directories should follow any additional guidelines described
+by the respective SIG leads in the sub-directory's `CONTRIBUTING` file
+(e.g. [sig-cli/CONTRIBUTING](sig-cli/CONTRIBUTING.md)).
+
+Attending a [SIG meeting](/sig-list.md) or posting on their mailing list might be prudent if you want to make extensive contributions.
+

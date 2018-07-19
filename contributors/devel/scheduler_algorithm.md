@@ -8,7 +8,7 @@ The purpose of filtering the nodes is to filter out the nodes that do not meet c
 
 - `NoDiskConflict`: Evaluate if a pod can fit due to the volumes it requests, and those that are already mounted. Currently supported volumes are: AWS EBS, GCE PD, ISCSI and Ceph RBD. Only Persistent Volume Claims for those supported types are checked. Persistent Volumes added directly to pods are not evaluated and are not constrained by this policy.
 - `NoVolumeZoneConflict`: Evaluate if the volumes a pod requests are available on the node, given the Zone restrictions.
-- `PodFitsResources`: Check if the free resource (CPU and Memory) meets the requirement of the Pod. The free resource is measured by the capacity minus the sum of requests of all Pods on the node. To learn more about the resource QoS in Kubernetes, please check [QoS proposal](../design-proposals/resource-qos.md).
+- `PodFitsResources`: Check if the free resource (CPU and Memory) meets the requirement of the Pod. The free resource is measured by the capacity minus the sum of requests of all Pods on the node. To learn more about the resource QoS in Kubernetes, please check [QoS proposal](../design-proposals/node/resource-qos.md).
 - `PodFitsHostPorts`: Check if any HostPort required by the Pod is already occupied on the node.
 - `HostName`: Filter out all nodes except the one specified in the PodSpec's NodeName field.
 - `MatchNodeSelector`: Check if the labels of the node match the labels specified in the Pod's `nodeSelector` field and, as of Kubernetes v1.2, also match the `scheduler.alpha.kubernetes.io/affinity` pod annotation if present. See [here](https://kubernetes.io/docs/user-guide/node-selection/) for more details on both.
@@ -17,7 +17,7 @@ The purpose of filtering the nodes is to filter out the nodes that do not meet c
 - `CheckNodeMemoryPressure`: Check if a pod can be scheduled on a node reporting memory pressure condition. Currently, no ``BestEffort`` should be placed on a node under memory pressure as it gets automatically evicted by kubelet.
 - `CheckNodeDiskPressure`: Check if a pod can be scheduled on a node reporting disk pressure condition. Currently, no pods should be placed on a node under disk pressure as it gets automatically evicted by kubelet.
 
-The details of the above predicates can be found in [plugin/pkg/scheduler/algorithm/predicates/predicates.go](http://releases.k8s.io/HEAD/plugin/pkg/scheduler/algorithm/predicates/predicates.go). All predicates mentioned above can be used in combination to perform a sophisticated filtering policy. Kubernetes uses some, but not all, of these predicates by default. You can see which ones are used by default in [plugin/pkg/scheduler/algorithmprovider/defaults/defaults.go](http://releases.k8s.io/HEAD/plugin/pkg/scheduler/algorithmprovider/defaults/defaults.go).
+The details of the above predicates can be found in [pkg/scheduler/algorithm/predicates/predicates.go](http://releases.k8s.io/HEAD/pkg/scheduler/algorithm/predicates/predicates.go). All predicates mentioned above can be used in combination to perform a sophisticated filtering policy. Kubernetes uses some, but not all, of these predicates by default. You can see which ones are used by default in [pkg/scheduler/algorithmprovider/defaults/defaults.go](http://releases.k8s.io/HEAD/pkg/scheduler/algorithmprovider/defaults/defaults.go).
 
 ## Ranking the nodes
 
@@ -36,9 +36,5 @@ Currently, Kubernetes scheduler provides some practical priority functions, incl
 - `ImageLocalityPriority`: Nodes are prioritized based on locality of images requested by a pod. Nodes with larger size of already-installed packages required by the pod will be preferred over nodes with no already-installed packages required by the pod or a small total size of already-installed packages required by the pod.
 - `NodeAffinityPriority`: (Kubernetes v1.2) Implements `preferredDuringSchedulingIgnoredDuringExecution` node affinity; see [here](https://kubernetes.io/docs/user-guide/node-selection/) for more details.
 
-The details of the above priority functions can be found in [plugin/pkg/scheduler/algorithm/priorities](http://releases.k8s.io/HEAD/plugin/pkg/scheduler/algorithm/priorities/). Kubernetes uses some, but not all, of these priority functions by default. You can see which ones are used by default in [plugin/pkg/scheduler/algorithmprovider/defaults/defaults.go](http://releases.k8s.io/HEAD/plugin/pkg/scheduler/algorithmprovider/defaults/defaults.go). Similar as predicates, you can combine the above priority functions and assign weight factors (positive number) to them as you want (check [scheduler.md](scheduler.md) for how to customize).
+The details of the above priority functions can be found in [pkg/scheduler/algorithm/priorities](http://releases.k8s.io/HEAD/pkg/scheduler/algorithm/priorities/). Kubernetes uses some, but not all, of these priority functions by default. You can see which ones are used by default in [pkg/scheduler/algorithmprovider/defaults/defaults.go](http://releases.k8s.io/HEAD/pkg/scheduler/algorithmprovider/defaults/defaults.go). Similar as predicates, you can combine the above priority functions and assign weight factors (positive number) to them as you want (check [scheduler.md](scheduler.md) for how to customize).
 
-
-<!-- BEGIN MUNGE: GENERATED_ANALYTICS -->
-[![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/docs/devel/scheduler_algorithm.md?pixel)]()
-<!-- END MUNGE: GENERATED_ANALYTICS -->

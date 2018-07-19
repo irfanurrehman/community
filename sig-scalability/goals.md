@@ -70,9 +70,13 @@ NOTES:
   * Goal: 90 minutes
   * Time to restore a fully saturated large cluster is important for cluster-wide failure recovery, and/or related emergency capacity provisioning (e.g. building and populating a new cluster to replace capacity in a failed one). This number also needs to correlate with max pods per cluster, and max scheduler throughput (500,000 pods / 100 pods per second ~ 90 minutes).  We believe that this fulfills most real-world recovery requirements.  The required time to recovery is usually driven primarily by trying to reduce the probability of multiple uncorrelated cluster failures (e.g. "one of our 3 clusters has failed. We're just fine unless another one fails before we've repaired/replaced the first failed one").
 
+## Control Plane Configurations for Testing
+
+Configuration of the control plane for cluster testing varies by provider, and there are multiple reasonable configurations. Discussion and guideline of control plane configuration options and standards are documented [here](provider-configs.md).
+
 ## Open Questions
 
 1. **What, if any, reasonable use cases exist for very large numbers of very small nodes (e.g. for isolation reasons - multitenant)?  Based on comments so far, it seems that the answer is yes, and needs to be addressed.**<br>
-The above scaling goals explicitly accommodate a maximum of 5,000 nodes.  Do we need a special case for larger numbers of small nodes (e.g. 200,000  single-core nodes).  The latter already fits within our other scalability limits (cores per cluster, pods per cluster), so it might not be more difficult to achieve than those.  Two example use cases I've heard anecdotally are (a) running e.g. large numbers of customers' small, largely idle wordpress instances, one per node, and (b) giving away limited numbers of free
+The above scaling goals explicitly accommodate a maximum of 5,000 nodes.  Do we need a special case for larger numbers of small nodes (e.g. 200,000  single-core nodes).  The latter already fits within our other scalability limits (cores per cluster, pods per cluster), so it might not be more difficult to achieve than those.  Two example use cases I've heard anecdotally are (a) running e.g. large numbers of customers' small, largely idle wordpress instances, one per node, and (b) giving away limited numbers of free containers to large numbers of customers for promotional reasons (similar to AWS free tier micro instances).
 2. **What, if any, reasonable use cases exist for very large numbers of very small containers per core?**<br>
 E.g. are perhaps hundreds of containers per core useful for specialized applications? We speculate that building large numbers of very small yet useful containers each within say 20MB of RAM, and <1% of a core is difficult (as opposed to very small supportive/sidecar pods alongside larger pods, which is totally legitimate, and supported).  

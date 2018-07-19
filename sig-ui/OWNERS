@@ -1,0 +1,6 @@
+reviewers:
+  - sig-ui-leads
+approvers:
+  - sig-ui-leads
+labels:
+  - sig/ui

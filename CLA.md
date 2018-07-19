@@ -1,30 +1,89 @@
-### How do I sign the CNCF CLA?
+# The Contributor License Agreement
 
-* To sign up as an individual or as an employee of a signed organization, go to https://identity.linuxfoundation.org/projects/cncf
-* To sign up as an organization, go to https://identity.linuxfoundation.org/node/285/organization-signup
-* To review the CNCF CLA, go to https://github.com/cncf/cla
+The [Cloud Native Computing Foundation](https://www.cncf.io/community) defines
+the legal status of the contributed code in a _Contributor License Agreement_
+(CLA).
 
-***
+Only original source code from CLA signatories can be accepted into kubernetes.
 
-### After you select one of the options above, please follow the instructions below:
+This policy does not apply to [third_party](https://git.k8s.io/kubernetes/third_party)
+and [vendor](https://git.k8s.io/kubernetes/vendor).
 
-**Step 1**: You must sign in with GitHub.
+## What am I agreeing to?
 
-**Step 2**: If you are signing up as an employee, you must use your official person@organization.domain email address in the CNCF account registration page.
+There are two versions of the CLA:
 
+1. One for [individual contributors](https://github.com/cncf/cla/blob/master/individual-cla.pdf)
+submitting contributions on their own behalf.
+1. One for [corporations](https://github.com/cncf/cla/blob/master/corporate-cla.pdf)
+to sign for contributions submitted by their employees.
 
-**Step 3**: The email you use on your commits (https://help.github.com/articles/setting-your-email-in-git/) must match the email address you use when signing up for the CNCF account. 
+It is important to read and understand this legal agreement.
 
-![CNCFCLA](http://i.imgur.com/tEk2x3j.png)
+## How do I sign?
+
+#### 1. Log into the Linux Foundation ID Portal with Github
+
+Click one of:
+  * [Individual signup](https://identity.linuxfoundation.org/projects/cncf) to
+  sign up as an individual or as an employee of a signed organization.
+  * [Corporation signup](https://identity.linuxfoundation.org/node/285/organization-signup)
+  to sign as a corporation representative and manage signups from your organization.
+
+Once you get to the sign in form, click "Log in with Github":
+
+![CNCFCLA1](http://i.imgur.com/tEk2x3j.png)
+
+#### 2. Create Linux Foundation ID Portal account with correct e-mail address
+
+Ensure that the e-mail address you use when completing this form matches the one
+you will use for your commits.
+
+If you are signing up as an employee, you must use your official
+person@organization.domain email address in the CNCF account registration page.
+
 ![CNCFCLA2](http://i.imgur.com/t3WAtrz.png)
 
+#### 3. Complete signing process
 
-**Step 4**: Once the CLA sent to your email address is signed (or your email address is verified in case your organization has signed the CLA), you should be able to check that you are authorized in any new PR you create.
+Once you have created your account, follow the instructions to complete the
+signing process via Hellosign.
+
+#### 4. Ensure your Github e-mail address matches address used to sign CLA
+
+Your Github email address __must match__ the same address you use when signing
+the CLA. Github has [documentation](https://help.github.com/articles/setting-your-commit-email-address-on-github/)
+on setting email addresses.
+
+You must also set your [git e-mail](https://help.github.com/articles/setting-your-email-in-git)
+to match this e-mail address as well.
+
+If you've already submitted a PR you can correct your user.name and user.email
+and then use use `git commit --amend --reset-author` and then `git push --force` to
+correct the PR.
+
+#### 5. Look for an email indicating successful signup.
+
+> The Linux Foundation
+>
+> Hello,
+>
+> You have signed CNCF Individual Contributor License Agreement.
+> You can see your document anytime by clicking View on HelloSign.
+>
+
+Once you have this, the CLA authorizer bot will authorize your PRs.
 
 ![CNCFCLA3](http://i.imgur.com/C5ZsNN6.png)
 
-**Step 5**: The status on your old PRs will be updated when any new comment is made on it.
+## Troubleshooting
 
-### I'm having issues with signing the CLA.
+If you are having problems with signed the CLA send a mail to: `helpdesk@rt.linuxfoundation.org`.
 
-If you're facing difficulty with signing the CNCF CLA, please explain your case on https://github.com/kubernetes/kubernetes/issues/27796 and we (@sarahnovotny and @foxish), along with the CNCF will help sort it out.
+Someone from the CNCF will respond to your ticket to help.
+
+## Setting up the CNCF CLA check
+
+If you are a Kubernetes GitHub organization or repo owner, and would like to setup
+the Linux Foundation CNCF CLA check for your repositories, please 
+[read the docs on setting up the CNCF CLA check](/setting-up-cla-check.md)

@@ -3,11 +3,11 @@ A set of API conventions, which applies to new APIs and to changes, can be
 found at [API Conventions](api-conventions.md).
 
 **Table of Contents**
-<!-- BEGIN MUNGE: GENERATED_TOC -->
 
 - [So you want to change the API?](#so-you-want-to-change-the-api)
   - [Operational overview](#operational-overview)
   - [On compatibility](#on-compatibility)
+  - [Backward compatibility gotchas](#backward-compatibility-gotchas)
   - [Incompatible API changes](#incompatible-api-changes)
   - [Changing versioned APIs](#changing-versioned-apis)
     - [Edit types.go](#edit-typesgo)
@@ -19,6 +19,7 @@ found at [API Conventions](api-conventions.md).
   - [Edit version conversions](#edit-version-conversions)
   - [Generate protobuf objects](#generate-protobuf-objects)
   - [Edit json (un)marshaling code](#edit-json-unmarshaling-code)
+  - [Making a new API Version](#making-a-new-api-version)
   - [Making a new API Group](#making-a-new-api-group)
   - [Update the fuzzer](#update-the-fuzzer)
   - [Update the semantic comparisons](#update-the-semantic-comparisons)
@@ -28,15 +29,13 @@ found at [API Conventions](api-conventions.md).
   - [Alpha, Beta, and Stable Versions](#alpha-beta-and-stable-versions)
     - [Adding Unstable Features to Stable Versions](#adding-unstable-features-to-stable-versions)
 
-<!-- END MUNGE: GENERATED_TOC -->
 
 # So you want to change the API?
 
 Before attempting a change to the API, you should familiarize yourself with a
 number of existing API types and with the [API conventions](api-conventions.md).
 If creating a new API type/resource, we also recommend that you first send a PR
-containing just a proposal for the new API types, and that you initially target
-the extensions API (pkg/apis/extensions).
+containing just a proposal for the new API types.
 
 The Kubernetes API has two major components - the internal structures and
 the versioned APIs. The versioned APIs are intended to be stable, while the
@@ -103,9 +102,11 @@ An API change is considered forward and backward-compatible if it:
    * adds new functionality that is not required for correct behavior (e.g.,
 does not add a new required field)
    * does not change existing semantics, including:
-     * default values and behavior
+     * default values *and behavior*
      * interpretation of existing API types, fields, and values
      * which fields are required and which are not
+     * mutable fields do not become immutable
+     * valid values do not become invalid
 
 Put another way:
 
@@ -254,32 +255,46 @@ then PUTs back:
 The update should not fail, because it would have worked before `heightInInches`
 was added.
 
-Therefore, when there are duplicate fields, the old field MUST take precedence
-over the new, and the new field should be set to match by the server upon write.
-A new client would be aware of the old field as well as the new, and so can
-ensure that the old field is either unset or is set consistently with the new
-field. However, older clients would be unaware of the new field. Please avoid
-introducing duplicate fields due to the complexity they incur in the API.
+## Backward compatibility gotchas
 
-A new representation, even in a new API version, that is more expressive than an
-old one breaks backward compatibility, since clients that only understood the
-old representation would not be aware of the new representation nor its
-semantics. Examples of proposals that have run into this challenge include
-[generalized label selectors](http://issues.k8s.io/341) and [pod-level security
-context](http://prs.k8s.io/12823).
+* A single feature/property cannot be represented using multiple spec fields in the same API version
+  simultaneously, as the example above shows. Only one field can be populated in any resource at a time, and the client
+  needs to be able to specify which field they expect to use (typically via API version),
+  on both mutation and read. Old clients must continue to function properly while only manipulating
+  the old field. New clients must be able to function properly while only manipulating the new
+  field.
 
-As another interesting example, enumerated values cause similar challenges.
-Adding a new value to an enumerated set is *not* a compatible change. Clients
-which assume they know how to handle all possible values of a given field will
-not be able to handle the new values. However, removing value from an enumerated
-set *can* be a compatible change, if handled properly (treat the removed value
-as deprecated but allowed). This is actually a special case of a new
-representation, discussed above.
+* A new representation, even in a new API version, that is more expressive than an
+  old one breaks backward compatibility, since clients that only understood the
+  old representation would not be aware of the new representation nor its
+  semantics. Examples of proposals that have run into this challenge include
+  [generalized label selectors](http://issues.k8s.io/341) and [pod-level security context](http://prs.k8s.io/12823).
 
-For [Unions](api-conventions.md#unions), sets of fields where at most one should
-be set, it is acceptable to add a new option to the union if the [appropriate
-conventions](api-conventions.md#objects) were followed in the original object.
-Removing an option requires following the deprecation process.
+* Enumerated values cause similar challenges. Adding a new value to an enumerated set
+  is *not* a compatible change. Clients which assume they know how to handle all possible
+  values of a given field will not be able to handle the new values. However, removing a
+  value from an enumerated set *can* be a compatible change, if handled properly (treat the
+  removed value as deprecated but allowed). For enumeration-like fields that expect to add
+  new values in the future, such as `reason` fields, please document that expectation clearly
+  in the API field descriptions. Clients should treat such sets of values as potentially
+  open-ended.
+
+* For [Unions](api-conventions.md#unions), sets of fields where at most one should
+  be set, it is acceptable to add a new option to the union if the [appropriate
+  conventions](api-conventions.md#objects) were followed in the original object.
+  Removing an option requires following the [deprecation process](https://kubernetes.io/docs/reference/deprecation-policy/).
+  
+* Changing any validation rules always has the potential of breaking some client, since it changes the
+  assumptions about part of the API, similar to adding new enum values. Validation rules on spec fields can
+  neither be relaxed nor strengthened. Strengthening cannot be permitted because any requests that previously
+  worked must continue to work. Weakening validation has the potential to break other consumers and generators
+  of the API resource. Status fields whose writers are under our control (e.g., written by non-pluggable
+  controllers), may potentially tighten validation, since that would cause a subset of previously valid
+  values to be observable by clients.
+  
+* Do not add a new API version of an existing resource and make it the preferred version in the same
+  release, and do not make it the storage version. The latter is necessary so that a rollback of the
+  apiserver doesn't render resources in etcd undecodable after rollback.
 
 ## Incompatible API changes
 
@@ -292,28 +307,22 @@ unacceptable. Compatibility for experimental or alpha APIs is not strictly
 required, but breaking compatibility should not be done lightly, as it disrupts
 all users of the feature. Experimental APIs may be removed. Alpha and beta API
 versions may be deprecated and eventually removed wholesale, as described in the
-[versioning document](../design-proposals/versioning.md). Document incompatible changes
-across API versions under the appropriate
-[{v? conversion tips tag in the api.md doc](../api.md).
+[versioning document](../design-proposals/release/versioning.md).
 
 If your change is going to be backward incompatible or might be a breaking
 change for API consumers, please send an announcement to
 `kubernetes-dev@googlegroups.com` before the change gets in. If you are unsure,
 ask. Also make sure that the change gets documented in the release notes for the
-next release by labeling the PR with the "release-note" github label.
+next release by labeling the PR with the "release-note-action-required" github label.
 
 If you found that your change accidentally broke clients, it should be reverted.
 
 In short, the expected API evolution is as follows:
 
-* `extensions/v1alpha1` ->
 * `newapigroup/v1alpha1` -> ... -> `newapigroup/v1alphaN` ->
 * `newapigroup/v1beta1` -> ... -> `newapigroup/v1betaN` ->
 * `newapigroup/v1` ->
 * `newapigroup/v2alpha1` -> ...
-
-While in extensions we have no obligation to move forward with the API at all
-and may delete or break it at any time.
 
 While in alpha we expect to move forward with it, but may break it.
 
@@ -332,12 +341,23 @@ before starting "all the rest".
 
 ### Edit types.go
 
-The struct definitions for each API are in `pkg/api/<version>/types.go`. Edit
-those files to reflect the change you want to make. Note that all types and
-non-inline fields in versioned APIs must be preceded by descriptive comments -
-these are used to generate documentation. Comments for types should not contain
-the type name; API documentation is generated from these comments and end-users
-should not be exposed to golang type names.
+The struct definitions for each API are in
+`staging/src/k8s.io/api/<group>/<version>/types.go`. Edit those files to reflect
+the change you want to make. Note that all types and non-inline fields in
+versioned APIs must be preceded by descriptive comments - these are used to
+generate documentation. Comments for types should not contain the type name; API
+documentation is generated from these comments and end-users should not be
+exposed to golang type names.
+
+For types that need the generated
+[DeepCopyObject](https://github.com/kubernetes/kubernetes/commit/8dd0989b395b29b872e1f5e06934721863e4a210#diff-6318847735efb6fae447e7dbf198c8b2R3767)
+methods, usually only required by the top-level types like `Pod`, add this line
+to the comment
+([example](https://github.com/kubernetes/kubernetes/commit/39d95b9b065fffebe5b6f233d978fe1723722085#diff-ab819c2e7a94a3521aecf6b477f9b2a7R30)): 
+
+```golang 
+  // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+```
 
 Optional fields should have the `,omitempty` json tag; fields are interpreted as
 being required otherwise.
@@ -345,8 +365,11 @@ being required otherwise.
 ### Edit defaults.go
 
 If your change includes new fields for which you will need default values, you
-need to add cases to `pkg/api/<version>/defaults.go`. Of course, since you
-have added code, you have to add a test: `pkg/api/<version>/defaults_test.go`.
+need to add cases to `pkg/apis/<group>/<version>/defaults.go` (the core v1 API
+is special, its defaults.go is at `pkg/api/v1/defaults.go`. For simplicity, we
+will not mention this special case in the rest of the article). Of course, since
+you have added code, you have to add a test:
+`pkg/apis/<group>/<version>/defaults_test.go`.
 
 Do use pointers to scalars when you need to distinguish between an unset value
 and an automatic zero value.  For example,
@@ -365,14 +388,16 @@ all in a different order (i.e. you started with the internal structs), then you
 should jump to that topic below. In the very rare case that you are making an
 incompatible change you might or might not want to do this now, but you will
 have to do more later. The files you want are
-`pkg/api/<version>/conversion.go` and `pkg/api/<version>/conversion_test.go`.
+`pkg/apis/<group>/<version>/conversion.go` and
+`pkg/apis/<group>/<version>/conversion_test.go`.
 
 Note that the conversion machinery doesn't generically handle conversion of
 values, such as various kinds of field references and API constants. [The client
-library](../../pkg/client/restclient/request.go) has custom conversion code for
-field references. You also need to add a call to
-api.Scheme.AddFieldLabelConversionFunc with a mapping function that understands
-supported translations.
+library](https://github.com/kubernetes/client-go/blob/v4.0.0-beta.0/rest/request.go#L352)
+has custom conversion code for field references. You also need to add a call to
+`AddFieldLabelConversionFunc` of your scheme with a mapping function that
+understands supported translations, like this
+[line](https://github.com/kubernetes/kubernetes/blob/v1.8.0-alpha.2/pkg/api/v1/conversion.go#L165).
 
 ## Changing the internal structures
 
@@ -382,22 +407,25 @@ used.
 ### Edit types.go
 
 Similar to the versioned APIs, the definitions for the internal structs are in
-`pkg/api/types.go`. Edit those files to reflect the change you want to make.
-Keep in mind that the internal structs must be able to express *all* of the
-versioned APIs.
+`pkg/apis/<group>/types.go`. Edit those files to reflect the change you want to
+make. Keep in mind that the internal structs must be able to express *all* of
+the versioned APIs.
+
+Similar to the versioned APIs, you need to add the `+k8s:deepcopy-gen` tag to
+types that need generated DeepCopyObject methods.
 
 ## Edit validation.go
 
 Most changes made to the internal structs need some form of input validation.
 Validation is currently done on internal objects in
-`pkg/api/validation/validation.go`. This validation is the one of the first
-opportunities we have to make a great user experience - good error messages and
-thorough validation help ensure that users are giving you what you expect and,
-when they don't, that they know why and how to fix it. Think hard about the
-contents of `string` fields, the bounds of `int` fields and the
-requiredness/optionalness of fields.
+`pkg/apis/<group>/validation/validation.go`. This validation is the one of the
+first opportunities we have to make a great user experience - good error
+messages and thorough validation help ensure that users are giving you what you
+expect and, when they don't, that they know why and how to fix it. Think hard
+about the contents of `string` fields, the bounds of `int` fields and the
+optionality of fields.
 
-Of course, code needs tests - `pkg/api/validation/validation_test.go`.
+Of course, code needs tests - `pkg/apis/<group>/validation/validation_test.go`.
 
 ## Edit version conversions
 
@@ -414,44 +442,72 @@ inefficient).
 
 The conversion code resides with each versioned API. There are two files:
 
-   - `pkg/apis/extensions/<version>/conversion.go` containing manually written
+   - `pkg/apis/<group>/<version>/conversion.go` containing manually written
      conversion functions
-   - `pkg/apis/extensions/<version>/zz_generated.conversion.go` containing
+   - `pkg/apis/<group>/<version>/zz_generated.conversion.go` containing
      auto-generated conversion functions
 
 Since auto-generated conversion functions are using manually written ones,
 those manually written should be named with a defined convention, i.e. a
-function converting type X in pkg a to type Y in pkg b, should be named:
+function converting type `X` in pkg `a` to type `Y` in pkg `b`, should be named:
 `convert_a_X_To_b_Y`.
 
 Also note that you can (and for efficiency reasons should) use auto-generated
 conversion functions when writing your conversion functions.
 
+Adding manually written conversion also requires you to add tests to
+`pkg/apis/<group>/<version>/conversion_test.go`.
+
 Once all the necessary manually written conversions are added, you need to
 regenerate auto-generated ones. To regenerate them run:
 
 ```sh
-hack/update-codegen.sh
+make clean && make generated_files
 ```
 
-As part of the build, kubernetes will also generate code to handle deep copy of
-your versioned api objects. The deep copy code resides with each versioned API:
-   - `<path_to_versioned_api>/zz_generated.deepcopy.go` containing auto-generated copy functions
+`make clean` is important, otherwise the generated files might be stale, because
+the build system uses custom cache.
+
+`make all` will invoke `make generated_files` as well.
+
+The `make generated_files` will also regenerate the `zz_generated.deepcopy.go`,
+`zz_generated.defaults.go`, and `api/openapi-spec/swagger.json`.
 
 If regeneration is somehow not possible due to compile errors, the easiest
-workaround is to comment out the code causing errors and let the script to
-regenerate it. If the auto-generated conversion methods are not used by the
-manually-written ones, it's fine to just remove the whole file and let the
-generator to create it from scratch.
+workaround is to remove the files causing errors and rerun the command.
 
-Unsurprisingly, adding manually written conversion also requires you to add
-tests to `pkg/api/<version>/conversion_test.go`.
+## Generate Code 
 
+Apart from the `defaulter-gen`, `deepcopy-gen`, `conversion-gen` and
+`openapi-gen`, there are a few other generators:
+ - `go-to-protobuf`
+ - `client-gen`
+ - `lister-gen`
+ - `informer-gen`
+ - `codecgen` (for fast json serialization with ugorji codec)
 
-## Generate protobuf objects
+Many of the generators are based on
+[`gengo`](https://github.com/kubernetes/gengo) and share common
+flags. The `--verify-only` flag will check the existing files on disk
+and fail if they are not what would have been generated.
+
+The generators that create go code have a `--go-header-file` flag
+which should be a file that contains the header that should be
+included. This header is the copyright that should be present at the
+top of the generated file and should be checked with the
+[`repo-infra/verify/verify-boilerplane.sh`](https://git.k8s.io/repo-infra/verify/verify-boilerplate.sh)
+script at a later stage of the build.
+
+To invoke these generators, you can run `make update`, which runs a bunch of
+[scripts](https://github.com/kubernetes/kubernetes/blob/v1.8.0-alpha.2/hack/update-all.sh#L63-L78).
+Please continue to read the next a few sections, because some generators have
+prerequisites, also because they introduce how to invoke the generators
+individually if you find `make update` takes too long to run.
+
+### Generate protobuf objects
 
 For any core API object, we also need to generate the Protobuf IDL and marshallers.
-That generation is done with
+That generation is invoked with
 
 ```sh
 hack/update-generated-protobuf.sh
@@ -464,37 +520,111 @@ use our own equivalents for JSON serialization. The `pkg/api/serialization_test.
 will verify that your protobuf serialization preserves all fields - be sure to
 run it several times to ensure there are no incompletely calculated fields.
 
-## Edit json (un)marshaling code
+### Generate Clientset
+
+`client-gen` is a tool to generate clientsets for top-level API objects.
+
+`client-gen` requires the `// +genclient` annotation on each
+exported type in both the internal `pkg/apis/<group>/types.go` as well as each
+specifically versioned `staging/src/k8s.io/api/<group>/<version>/types.go`.
+
+If the apiserver hosts your API under a different group name than the `<group>`
+in the filesystem, (usually this is because the `<group>` in the filesystem
+omits the "k8s.io" suffix, e.g., admission vs. admission.k8s.io), you can
+instruct the `client-gen` to use the correct group name by adding the `//
++groupName=` annotation in the `doc.go` in both the internal
+`pkg/apis/<group>/doc.go` as well as in each specifically versioned
+`staging/src/k8s.io/api/<group>/<version>/types.go`.
+
+Once you added the annotations, generate the client with
+
+```sh
+hack/update-codegen.sh
+```
+
+Note that you can use the optional `// +groupGoName=` to specify a CamelCase
+custom Golang identifier to de-conflict e.g. `policy.authorization.k8s.io` and
+`policy.k8s.io`. These two would both map to `Policy()` in clientsets.
+
+client-gen is flexible. See [this document](generating-clientset.md) if you need
+client-gen for non-kubernetes API.
+
+### Generate Listers
+
+`lister-gen` is a tool to generate listers for a client. It reuses the
+`//+genclient` and the `// +groupName=` annotations, so you do not need to
+specify extra annotations.
+
+Your previous run of `hack/update-codegen.sh` has invoked `lister-gen`.
+
+### Generate Informers
+
+`informer-gen` generates the very useful Informers which watch API
+resources for changes. It reuses the `//+genclient` and the
+`//+groupName=` annotations, so you do not need to specify extra annotations.
+
+Your previous run of `hack/update-codegen.sh` has invoked `informer-gen`.
+
+### Edit json (un)marshaling code
 
 We are auto-generating code for marshaling and unmarshaling json representation
 of api objects - this is to improve the overall system performance.
 
 The auto-generated code resides with each versioned API:
 
-   - `pkg/api/<version>/types.generated.go`
-   - `pkg/apis/extensions/<version>/types.generated.go`
+   - `staging/src/k8s.io/api/<group>/<version>/generated.proto`
+   - `staging/src/k8s.io/api/<group>/<version>/generated.pb.go`
 
 To regenerate them run:
 
 ```sh
-hack/update-codecgen.sh
+hack/update-generated-protobuf.sh
 ```
 
-## Making a new API Group
+## Making a new API Version
 
 This section is under construction, as we make the tooling completely generic.
 
-At the moment, you'll have to make a new directory under `pkg/apis/`; copy the
-directory structure from `pkg/apis/authentication`. Add the new group/version to all
-of the `hack/{verify,update}-generated-{deep-copy,conversions,swagger}.sh` files
-in the appropriate places--it should just require adding your new group/version
-to a bash array.  See [docs on adding an API group](adding-an-APIGroup.md) for
-more.
+If you are adding a new API version to an existing group, you can copy the
+structure of the existing `pkg/apis/<group>/<existing-version>` and
+`staging/src/k8s.io/api/<group>/<existing-version>` directories.
 
-Adding API groups outside of the `pkg/apis/` directory is not currently
-supported, but is clearly desirable. The deep copy & conversion generators need
-to work by parsing go files instead of by reflection; then they will be easy to
-point at arbitrary directories: see issue [#13775](http://issue.k8s.io/13775).
+Due to the fast changing nature of the project, the following content is probably out-dated:
+* You can control if the version is enabled by default by update
+[pkg/master/master.go](https://github.com/kubernetes/kubernetes/blob/v1.8.0-alpha.2/pkg/master/master.go#L381).
+* You must add the new version to
+  [pkg/apis/group_name/install/install.go](https://github.com/kubernetes/kubernetes/blob/v1.8.0-alpha.2/pkg/apis/apps/install/install.go).
+* You must add the new version to
+  [hack/lib/init.sh#KUBE_AVAILABLE_GROUP_VERSIONS](https://github.com/kubernetes/kubernetes/blob/v1.8.0-alpha.2/hack/lib/init.sh#L53).
+* You must add the new version  to
+  [hack/update-generated-protobuf-dockerized.sh](https://github.com/kubernetes/kubernetes/blob/v1.8.2/hack/update-generated-protobuf-dockerized.sh#L44)
+  to generate protobuf IDL and marshallers.
+* You must add the new version  to
+  [cmd/kube-apiserver/app#apiVersionPriorities](https://github.com/kubernetes/kubernetes/blob/v1.8.0-alpha.2/cmd/kube-apiserver/app/aggregator.go#L172)
+  to let the aggregator list it. This list will be removed before release 1.8.
+* You must setup storage for the new version in
+  [pkg/registry/group_name/rest](https://github.com/kubernetes/kubernetes/blob/v1.8.0-alpha.2/pkg/registry/authentication/rest/storage_authentication.go)
+
+You need to regenerate the generated code as instructed in the sections above.
+
+## Making a new API Group
+
+You'll have to make a new directory under `pkg/apis/` and
+`staging/src/k8s.io/api`; copy the directory structure of an existing API group,
+e.g. `pkg/apis/authentication` and `staging/src/k8s.io/api/authentication`;
+replace "authentication" with your group name and replace versions with your
+versions; replace the API kinds in
+[versioned](https://github.com/kubernetes/kubernetes/blob/v1.8.0-alpha.2/staging/src/k8s.io/api/authentication/v1/register.go#L47)
+and
+[internal](https://github.com/kubernetes/kubernetes/blob/v1.8.0-alpha.2/pkg/apis/authentication/register.go#L47)
+register.go, and
+[install.go](https://github.com/kubernetes/kubernetes/blob/v1.8.0-alpha.2/pkg/apis/authentication/install/install.go#L43)
+with your kinds.
+
+You'll have to add your API group/version to a few places in the code base, as
+noted in [Making a new API Version](#making-a-new-api-version) section.
+
+You need to regenerate the generated code as instructed in the sections above.
 
 ## Update the fuzzer
 
@@ -522,17 +652,19 @@ knows how to do deep-equality is through field-by-field bitwise comparisons.
 This is a problem for us.
 
 The first thing you should do is try not to do that. If you really can't avoid
-this, I'd like to introduce you to our `semantic DeepEqual` routine. It supports
-custom overrides for specific types - you can find that in `pkg/api/helpers.go`.
+this, I'd like to introduce you to our `apiequality.Semantic.DeepEqual` routine.
+It supports custom overrides for specific types - you can find that in
+`pkg/api/helper/helpers.go`.
 
 There's one other time when you might have to touch this: `unexported fields`.
 You see, while Go's `reflect` package is allowed to touch `unexported fields`,
-us mere mortals are not - this includes `semantic DeepEqual`. Fortunately, most
-of our API objects are "dumb structs" all the way down - all fields are exported
-(start with a capital letter) and there are no unexported fields. But sometimes
-you want to include an object in our API that does have unexported fields
-somewhere in it (for example, `time.Time` has unexported fields). If this hits
-you, you may have to touch the `semantic DeepEqual` customization functions.
+us mere mortals are not - this includes `apiequality.Semantic.DeepEqual`.
+Fortunately, most of our API objects are "dumb structs" all the way down - all
+fields are exported (start with a capital letter) and there are no unexported
+fields. But sometimes you want to include an object in our API that does have
+unexported fields somewhere in it (for example, `time.Time` has unexported fields).
+If this hits you, you may have to touch the `apiequality.Semantic.DeepEqual`
+customization functions.
 
 ## Implement your change
 
@@ -617,8 +749,7 @@ cases, objects will be automatically converted to the new version; in other
 cases, a manual upgrade may be necessary; a manual upgrade may require downtime
 for anything relying on the new feature, and may require manual conversion of
 objects to the new version; when manual conversion is necessary, the project
-will provide documentation on the process (for an example, see [v1 conversion
-tips](../api.md#v1-conversion-tips))
+will provide documentation on the process 
   - Cluster Reliability: since the feature has e2e tests, enabling the feature
 via a flag should not create new bugs in unrelated features; because the feature
 is new, it may have minor bugs
@@ -635,7 +766,9 @@ feedback
   - Object Versioning: API version `vX` where `X` is an integer (e.g. `v1`)
   - Availability: in official Kubernetes releases, and enabled by default
   - Audience: all users
-  - Completeness: same as beta
+  - Completeness: must have conformance tests, approved by SIG Architecture,
+in the appropriate conformance profile (e.g., non-portable and/or optional
+features may not be in the default profile)
   - Upgradeability: only [strictly compatible](#on-compatibility) changes
 allowed in subsequent software releases
   - Cluster Reliability: high
@@ -654,8 +787,10 @@ For example, consider the following object:
 ```go
 // API v6.
 type Frobber struct {
-  Height int    `json:"height"`
-  Param  string `json:"param"`
+  // height ...
+  Height *int32 `json:"height" protobuf:"varint,1,opt,name=height"`
+  // param ...
+  Param  string `json:"param" protobuf:"bytes,2,opt,name=param"`
 }
 ```
 
@@ -664,65 +799,154 @@ A developer is considering adding a new `Width` parameter, like this:
 ```go
 // API v6.
 type Frobber struct {
-  Height int    `json:"height"`
-  Width  int    `json:"height"`
-  Param  string `json:"param"`
+  // height ...
+  Height *int32 `json:"height" protobuf:"varint,1,opt,name=height"`
+  // param ...
+  Param  string `json:"param" protobuf:"bytes,2,opt,name=param"`
+  // width ...
+  Width  *int32 `json:"width,omitempty" protobuf:"varint,3,opt,name=width"`
 }
 ```
 
 However, the new feature is not stable enough to be used in a stable version
 (`v6`). Some reasons for this might include:
 
-- the final representation is undecided (e.g. should it be called `Width` or
-`Breadth`?)
-- the implementation is not stable enough for general use (e.g. the `Area()`
-routine sometimes overflows.)
+- the final representation is undecided (e.g. should it be called `Width` or `Breadth`?)
+- the implementation is not stable enough for general use (e.g. the `Area()` routine sometimes overflows.)
 
-The developer cannot add the new field until stability is met. However,
+The developer cannot add the new field unconditionally until stability is met. However,
 sometimes stability cannot be met until some users try the new feature, and some
 users are only able or willing to accept a released version of Kubernetes. In
 that case, the developer has a few options, both of which require staging work
 over several releases.
 
+#### Alpha field in existing API version
 
-A preferred option is to first make a release where the new value (`Width` in
-this example) is specified via an annotation, like this:
+Previously, annotations were used for experimental alpha features, but are no longer recommended for several reasons:
 
-```go
-kind: frobber
-version: v6
-metadata:
-  name: myfrobber
-  annotations:
-    frobbing.alpha.kubernetes.io/width: 2
-height: 4
-param: "green and blue"
-```
+* They expose the cluster to "time-bomb" data added as unstructured annotations against an earlier API server (https://issue.k8s.io/30819)
+* They cannot be migrated to first-class fields in the same API version (see the issues with representing a single value in multiple places in [backward compatibility gotchas](#backward-compatibility-gotchas))
 
-This format allows users to specify the new field, but makes it clear that they
-are using a Alpha feature when they do, since the word `alpha` is in the
-annotation key.
+The preferred approach adds an alpha field to the existing object, and ensures it is disabled by default:
+
+1. Add a feature gate to the API server to control enablement of the new field (and associated function):
+
+    In [staging/src/k8s.io/apiserver/pkg/features/kube_features.go](https://git.k8s.io/kubernetes/staging/src/k8s.io/apiserver/pkg/features/kube_features.go):
+
+    ```go
+    // owner: @you
+    // alpha: v1.11
+    //
+    // Add multiple dimensions to frobbers.
+    Frobber2D utilfeature.Feature = "Frobber2D"
+    
+    var defaultKubernetesFeatureGates = map[utilfeature.Feature]utilfeature.FeatureSpec{
+      ...
+      Frobber2D: {Default: false, PreRelease: utilfeature.Alpha},
+    }
+    ```
+
+2. Add the field to the API type:
+
+    * ensure the field is [optional](api-conventions.md#optional-vs-required)
+        * add the `omitempty` struct tag
+        * add the `// +optional` comment tag
+        * ensure the field is entirely absent from API responses when empty (optional fields should be pointers, anyway)
+    * include details about the alpha-level in the field description
+    
+    ```go
+    // API v6.
+    type Frobber struct {
+      // height ...
+      Height int32  `json:"height" protobuf:"varint,1,opt,name=height"`
+      // param ...
+      Param  string `json:"param" protobuf:"bytes,2,opt,name=param"`
+      // width indicates how wide the object is.
+      // This field is alpha-level and is only honored by servers that enable the Frobber2D feature.
+      // +optional
+      Width  *int32 `json:"width,omitempty" protobuf:"varint,3,opt,name=width"`
+    }
+    ```
+
+3. Before persisting the object to storage, clear disabled alpha fields.
+One possible place to do this is in the REST storage strategy's PrepareForCreate/PrepareForUpdate methods:
+
+    ```go
+    func (frobberStrategy) PrepareForCreate(ctx genericapirequest.Context, obj runtime.Object) {
+      frobber := obj.(*api.Frobber)
+    
+      if !utilfeature.DefaultFeatureGate.Enabled(features.Frobber2D) {
+        frobber.Width = nil
+      }
+    }
+    
+    func (frobberStrategy) PrepareForUpdate(ctx genericapirequest.Context, obj, old runtime.Object) {
+      newFrobber := obj.(*api.Frobber)
+      oldFrobber := old.(*api.Frobber)
+    
+      if !utilfeature.DefaultFeatureGate.Enabled(features.Frobber2D) {
+        newFrobber.Width = nil
+        oldFrobber.Width = nil
+      }
+    }
+    ```
+
+4. In validation, ensure the alpha field is not set if the feature gate is disabled (covers cases we might miss in the above):
+
+    ```go
+    func ValidateFrobber(f *api.Frobber, fldPath *field.Path) field.ErrorList {
+      ...
+      if utilfeature.DefaultFeatureGate.Enabled(features.Frobber2D) {
+        ... normal validation of width field ...
+      } else if f.Width != nil {		
+        allErrs = append(allErrs, field.Forbidden(fldPath.Child("width"), "disabled by feature-gate"))
+      }
+      ...
+    }
+    ```
+
+Eventually, the API machinery will handle a lot of these things automatically from
+declarative inputs.
+
+In future Kubernetes versions:
+
+* if the feature progresses to beta or stable status, the feature gate can be removed or be enabled by default.
+* if the schema of the alpha field must change in an incompatible way, a new field name must be used.
+* if the feature is abandoned, or the field name is changed, the field should be removed from the go struct, with a tombstone comment ensuring the field name and protobuf tag are not reused:
+
+    ```go
+    // API v6.
+    type Frobber struct {
+      // height ...
+      Height int32  `json:"height" protobuf:"varint,1,opt,name=height"`
+      // param ...
+      Param  string `json:"param" protobuf:"bytes,2,opt,name=param"`
+      
+      // +k8s:deprecated=width,protobuf=3
+    }
+    ```
+
+#### New alpha API version
 
 Another option is to introduce a new type with an new `alpha` or `beta` version
 designator, like this:
 
 ```
-// API v6alpha2
+// API v7alpha1
 type Frobber struct {
-  Height int    `json:"height"`
-  Width  int    `json:"height"`
-  Param  string `json:"param"`
+  // height ...
+  Height *int32 `json:"height" protobuf:"varint,1,opt,name=height"`
+  // param ...
+  Param  string `json:"param" protobuf:"bytes,2,opt,name=param"`
+  // width ...
+  Width  *int32 `json:"width,omitempty" protobuf:"varint,3,opt,name=width"`
 }
 ```
 
 The latter requires that all objects in the same API group as `Frobber` to be
-replicated in the new version, `v6alpha2`. This also requires user to use a new
+replicated in the new version, `v7alpha1`. This also requires user to use a new
 client which uses the other version. Therefore, this is not a preferred option.
 
 A related issue is how a cluster manager can roll back from a new version
 with a new feature, that is already being used by users. See
 https://github.com/kubernetes/kubernetes/issues/4855.
-
-<!-- BEGIN MUNGE: GENERATED_ANALYTICS -->
-[![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/docs/devel/api_changes.md?pixel)]()
-<!-- END MUNGE: GENERATED_ANALYTICS -->

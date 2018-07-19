@@ -6,7 +6,7 @@ The Kubernetes community adheres to the following principles:
 * Open: Kubernetes is open source. See repository guidelines and CLA, below.
 * Welcoming and respectful: See Code of Conduct, below.
 * Transparent and accessible: Work and collaboration should be done in public. See SIG governance, below.
-* Merit: Ideas and contributions are accepted according to their technical merit and alignment with project objectives, [scope](http://kubernetes.io/docs/whatisk8s/), and [design principles](contributors/design-proposals/principles.md).
+* Merit: Ideas and contributions are accepted according to their technical merit and alignment with project objectives, [scope](http://kubernetes.io/docs/whatisk8s/), and [design principles](contributors/design-proposals/architecture/principles.md).
 
 # Code of Conduct
 
@@ -14,188 +14,155 @@ The Kubernetes community abides by the CNCF [code of conduct](https://github.com
 
 _As contributors and maintainers of this project, and in the interest of fostering an open and welcoming community, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities._
 
-As a member of the Kubernetes project, you represent the project and your fellow contributors. 
+As a member of the Kubernetes project, you represent the project and your fellow contributors.
 We value our community tremendously and we'd like to keep cultivating a friendly and collaborative
-environment for our contributors and users. We want everyone in the community to have 
+environment for our contributors and users. We want everyone in the community to have
 [positive experiences](https://www.cncf.io/blog/2016/12/14/diversity-scholarship-series-one-software-engineers-unexpected-cloudnativecon-kubecon-experience).
+
+# Community membership
+
+See [community membership]
+
+# Community groups
+
+The project has 4 main types of groups:
+1. Special Interest Groups, SIGs
+2. Subprojects
+3. Working Groups, WGs
+4. Committees
+
+Note that the project is also in the process of forming a Steering
+Committee, details of which will be documented soon.
+
+## SIGs
+
+The Kubernetes project is organized primarily into Special Interest
+Groups, or SIGs. Each SIG is comprised of members from multiple
+companies and organizations, with a common purpose of advancing the
+project with respect to a specific topic, such as Networking or
+Documentation. Our goal is to enable a distributed decision structure
+and code ownership, as well as providing focused forums for getting
+work done, making decisions, and onboarding new contributors. Every
+identifiable subpart of the project (e.g., github org, repository,
+subdirectory, API, test, issue, PR) is intended to be owned by some
+SIG.
+
+Areas covered by SIGs may be vertically focused on particular
+components or functions, cross-cutting/horizontal, spanning many/all
+functional areas of the project, or in support of the project
+itself. Examples:
+* Vertical: Network, Storage, Node, Scheduling, Big Data
+* Horizontal: Scalability, Architecture
+* Project: Testing, Release, Docs, PM, Contributor Experience
+
+SIGs must have at least one and ideally two SIG leads at any given
+time. SIG leads are intended to be organizers and facilitators,
+responsible for the operation of the SIG and for communication and
+coordination with the other SIGs, the Steering Committee, and the
+broader community.
+
+Each SIG must have a charter that specifies its scope (topics,
+subsystems, code repos and directories), responsibilities, areas of
+authority, how members and roles of authority/leadership are
+selected/granted, how decisions are made, and how conflicts are
+resolved. A [short template] for intra-SIG governance has been
+developed in order to simplify SIG creation, and additional templates
+are being developed, but SIGs should be relatively free to customize
+or change how they operate, within some broad guidelines and
+constraints imposed by cross-SIG processes (e.g., the release process)
+and assets (e.g., the kubernetes repo).
+
+A primary reason that SIGs exist is as forums for collaboration.
+Much work in a SIG should stay local within that SIG. However, SIGs
+must communicate in the open, ensure other SIGs and community members
+can find notes of meetings, discussions, designs, and decisions, and
+periodically communicate a high-level summary of the SIG's work to the
+community.
+
+See [sig governance] for more details about current SIG operating
+mechanics, such as mailing lists, meeting times, etc.
+
+## Subprojects
+
+Specific work efforts within SIGs are divided into **subprojects**.
+Every part of the Kubernetes code and documentation must be owned by
+some subproject. Some SIGs may have a single subproject, but many SIGs
+have multiple significant subprojects with distinct (though sometimes
+overlapping) sets of contributors and [owners], who act as
+subproject’s technical leaders: responsible for vision and direction
+and overall design, choose/approve change proposal (KEP) approvers,
+field technical escalations, etc.
+
+Example subprojects for a few SIGs:
+* SIG Network: pod networking (CNI, etc.), Service (incl. kube-proxy),
+Ingress, DNS, and Network policy
+* SIG Apps: workload APIs, Helm, Kompose, ...
+* SIG Cluster Lifecycle: kubeadm, kops, kubespray, minikube, ...
+
+Subprojects for each SIG are documented in [sigs.yaml](sigs.yaml).
+
+## Working Groups
+
+We need community rallying points to facilitate discussions/work
+regarding topics that are short-lived or that span multiple SIGs.
+This is the purpose of Working Groups (WG). The intent is to make
+Working Groups relatively easy to create and to deprecate, once
+inactive.
+
+## Committees
+
+Some topics, such as Security or Code of Conduct, require
+discretion. Whereas SIGs are voluntary groups which operate in the
+open and anyone can join, Committees do not have open membership and do
+not always operate in the open.  The steering committee can form
+committees as needed, for bounded or unbounded duration.  Membership
+of a committee is decided by the steering committee.  Like a SIG, a
+committee has a charter and a lead, and will report to the steering
+committee periodically, and to the community as makes sense, given the
+charter.
+
+## Cross-project Communication and Coordination
+
+While most work shouldn’t require expensive coordination with other
+SIGs, there will be efforts (features, refactoring, etc.) that cross
+SIG boundaries.  In this case, it is expected that the SIGs coordinate
+with each other and come to mutually agreed solutions. In some cases,
+it may make sense to form a Working Group for joint work.  Cross-SIG
+coordination will naturally require more time and implies a certain
+amount of overhead.  This is intentional to encourage changes to be
+well encapsulated whenever possible.
+
+On the other hand, several SIGs do have project-wide impact, for
+example Release, Testing, and API Machinery. Even those that do not
+may sometimes need to make changes or impose new processes or
+conventions that affect other SIGs. In these cases, project-wide
+communication processes will need to be followed. For example,
+proposals with project-wide impact will need to be announced more
+broadly, with the opportunity for members of other SIGs to provide
+feedback and guidance. However, the SIG that owns the area, according
+to its charter, will own the decision. In the case of extended debate
+or deadlock, decisions may be escalated to the Steering Committee,
+which is expected to be uncommon.
+
+The exact processes and guidelines for such cross-project
+communication have yet to be formalized, but when in doubt, use
+kubernetes-dev@googlegroups.com and make an announcement at the
+community meeting.
 
 # Repository guidelines
 
 All repositories under Kubernetes github orgs, such as kubernetes and kubernetes-incubator,
 should follow the procedures outlined in the [incubator document](incubator.md). All code projects
 use the [Apache Licence version 2.0](LICENSE). Documentation repositories should use the
-[Creative Commons License version 4.0](https://github.com/kubernetes/kubernetes.github.io/blob/master/LICENSE).
-
-# Project Roles
-
-Kubernetes is a large project. It is necessarily a group effort.
-
-There are many ways to participate and contribute.
-We value all forms of constructive contribution, no matter how small, even if not
-explicitly described below.
-
-It is intended that contributors have the opportunity to grow in responsibilities,
-privileges, and authority corresponding to the scope, quality, quantity, and duration
-of their contributions. Definition of criteria and process is in progress, with preliminary
-requirements below.
-
-Why would someone want to perform and be accepted into a particular role?
- - To work more efficiently; more permissions reduce development friction
- - Status (have the Kubernetes badge on his/her profile and/or contributions)
- - Ownership
- - etc...
- 
-Roles that are currently assumed by project participants are described below,
-with a focus on the `kubernetes/kubernetes` repo.
-
-## Code and documentation contributors
-
-New community members:
-
-- [**New Contributor**](https://github.com/kubernetes/contrib/issues/1090): a
-  couple of PRs; should be welcomed to the community, helped with PR workflow, and
-  directed to relevant documentation
-- **Active Contributor**: at least 3 merged and/or assigned PRs (which could include documentation
-  contributions as well as code), including one in the past month; we have
-  [expectations](contributors/devel/community-expectations.md)
-  that frequent contributors will assist in our code-review process and with project
-  maintenance
-  
-Established community members:
-
-Established community members are expected to demonstrate their adherence to the principles in this
-document, familiarity with project organization, roles, policies, procedures, conventions, etc.,
-and technical and/or writing ability. Role-specific expectations, responsibilities, and requirements
-are enumerated below.
-
-- **Member**: an active contributor for at least 3 months; at least 10 merged and/or assigned PRs; active enough to be useful
-  to assign issues to them and add them to a github team (e.g., for a SIG) for notification
-  purposes; trusted enough to run tests on their PRs automatically; can issue "@k8s-bot ok to test"
-  for other contributors; if they choose public membership, they get a badge on their github profile;
-  should subscribe to kubernetes-dev@googlegroups.com; expected to be familiar with
-  project organization, roles, policies, procedures, etc.; should read the [developer
-  guide](contributors/devel/README.md); must enable
-  [two-factor authentication](https://help.github.com/articles/about-two-factor-authentication/)
-- **Reviewer**: org member for at least 3 months; at least 20 merged and/or assigned PRs, including 
-  at least 3 as the primary reviewer; familiar enough with some part of the codebase to be in some
-  [OWNERS](contributors/devel/owners.md) file as a reviewer (in repos using the bot),
-  assigned related PRs, assigned relevant test bugs; responsible for project quality control via
-  [code reviews](contributors/devel/collab.md); expected to be responsive to
-  review requests as per [community expectations](contributors/devel/community-expectations.md);
-  can champion incubator repos; must be nominated by an approver for that part of the codebase,
-  with no objections from other approvers; should be added to
-  [`kubernetes-reviewers`](https://github.com/orgs/kubernetes/teams/kubernetes-reviewers);
-  "read access" to kubernetes repo; get a badge on PR and issue comments; may be asked to
-  become a reviewer as a precondition for accepting a large code contribution
-- **Approver**: in some [OWNERS](contributors/devel/owners.md) file as an approver, which
-  will be needed to get code merged; previously a reviewer for that part of the
-  codebase for at least 3 months; at least 30 merged and/or assigned PRs, including at least 10 as
-  the primary reviewer; expected to be responsive to review requests as per
-  [community expectations](contributors/devel/community-expectations.md); expected to 
-  mentor contributors and reviewers; demonstrated sound technical judgement; nominated
-  by an area/component owner, with no objections from other owners;  may be asked to
-  become an approver as a precondition for accepting a large code contribution
-- **Area/Component Owner**: in top-level [OWNERS](contributors/devel/owners.md) file for
-  some area/component as an approver; design/proposal approval authority for some area 
-  of the project, though escalation is still possible; expected to mentor and guide approvers,
-  reviewers, and other contributors; may be asked to become an area/component owner as a precondition
-  for accepting the contribution of a new component or other major function
-- [**kubernetes-maintainers**](https://github.com/orgs/kubernetes/teams/kubernetes-maintainers):
-  approver for some part of the codebase for at least 3 months; on project for at least 1 year;
-  at least 50 merged and/or assigned PRs, including at least 20 as the primary reviewer;
-  write access to repo (assign issues/PRs, add/remove labels and milestones, edit issues and PRs, edit wiki,
-  create/delete labels and milestones); technically can lgtm any PR and cause it
-  to be merged by the submit queue, but expected to respect OWNERS files; expected to review PRs, fix bugs, maintain and
-  improve health and quality of the project, provide user support, mentor and guide approvers,
-  reviewers, and other contributors; must apply to `kubernetes-maintainers@googlegroups.com`, with a
-  [Champion](https://github.com/kubernetes/community/blob/master/incubator.md#faq) from the existing
-  kubernetes-maintainers members and a Sponsor from Project Approvers, with a summary
-  of contributions to the project, current project responsibilities, and links to merged and assigned PRs;
-  at least 3 of the maintainers must approve the application, with no objections; the application
-  expires after 2 weeks if not enough approvals are granted
-- **Project Approvers**: approver in [top-level OWNERS file in kubernetes repo](https://github.com/kubernetes/kubernetes/blob/master/OWNERS);
-  de-facto project decision makers; technically can 
-  approve virtually any PRs; can sponsor incubator repos; can sponsor maintainers;
-  maintainer in good standing for at least 1 year; strong technical vision;
-  committed to project's mission and culture; nomination/application process TBD
-- [**API Approver**](https://github.com/orgs/kubernetes/teams/api-approvers):
-  lead designers of the project, who are familiar with the 
-  design, requirements, mechanics, conventions, style, scope, gotchas, etc. 
-  of the API; most beta/GA API changes are vetted by the API approvers
-- [**API Reviewer**](https://github.com/orgs/kubernetes/teams/api-reviewers):
-  contributors familiar with design, requirements, mechanics, conventions, style,
-  scope, gotchas, etc. of the API; have written and/or reviewed Kubernetes APIs
-
-## SIG roles
-- **SIG Participant**: active in one or more areas of the project; wide 
-  variety of roles are represented
-- **SIG Lead**: SIG organizer
-
-## Management roles
-- **Team Lead**: tech lead or manager of some team at some company working on 
-  K8s; can influence priorities of their team members; pragmatically, 
-  probably want label/assignment powers
-- [**kubernetes-pm**](https://github.com/orgs/kubernetes/teams/kubernetes-pm): help to [manage and maintain the project](project-managers/README.md) in
-  ways other than just writing code (e.g. managing issues); should subscribe to kubernetes-pm@googlegroups.com
-
-## Rotations
-- [**Build Cop**](contributors/devel/on-call-build-cop.md): ensure tests pass, submit queue is working, rollback PRs, 
-  manually merge as necessary to fix build; should be members of appropriate repo's build-cops github team
-  (e.g., [kubernetes-build-cops](https://github.com/orgs/kubernetes/teams/kubernetes-build-cops))
-- [**User-Support Rotation**](contributors/devel/on-call-user-support.md): answer questions on stackoverflow, googlegroups, 
-  slack, twitter, etc. full time while on duty
-
-## Release roles
-- The roles of the individuals/team responsible for major, minor, and patch releases is documented
-  [here](https://github.com/kubernetes/community/tree/master/contributors/devel/release). Should be
-  members of the appropriate release-managers github team (e.g., 
-  [kubernetes-release-managers](https://github.com/orgs/kubernetes/teams/kubernetes-release-managers)).
-
-## Other duty-specific github roles:
-- [**Github Org Owner**](https://github.com/orgs/kubernetes/people?utf8=%E2%9C%93&query=%20role%3Aowner):
-  can create repos, do ~any github action; the number of
-  owners shouldn't scale with the organization's growth, O(1), and optimally it
-  should be less than 20 people who are very familiar with project workings and
-  distributed across a few time zones and organizations The other repos will
-  have distinct sets of people filling some of the above roles, also.
-
-## Other repositories
-
-Guidelines for roles in other repositories are TBD. New subprojects/repositories need to be
-able to add reviewers, approvers, and maintainers more rapidly than more mature subprojects.
-Subprojects less than 1 year old will have relaxed time and PR requirements.
-
-## Removal from roles
-
-Most of the above roles require continuous, significant involvement in the project. If someone
-becomes unable or unwilling to continue in their roles, they may retire. If someone doesn't fulfill
-their role for 90 days or violates the code of conduct, they may be removed from the role (escalation/vote
-process TBD). If they wish to resume their role in the future, they may request to return to it by asking
-the current members filling that role.
-
-# SIG Governance
-
-In order to standardize Special Interest Group efforts, create maximum transparency, and route contributors to the appropriate SIG, SIGs should follow the guidelines stated below:
-
-* Meet regularly, at least for 30 minutes every 3 weeks, except November and December
-* Keep up-to-date meeting notes, linked from the SIG's page in the community repo
-* Announce meeting agenda and minutes after each meeting, on their SIG mailing list
-* Record SIG meeting and make it publicly available
-* Ensure the SIG's mailing list and slack channel are archived
-* Report activity in the weekly community meeting at least once every 6 weeks
-* Participate in release planning meetings and retrospectives, and burndown meetings, as needed
-* Ensure related work happens in a project-owned github org and repository, with code and tests explicitly owned and supported by the SIG, including issue triage, PR reviews, test-failure response, bug fixes, etc. 
-* Use the above forums as the primary means of working, communicating, and collaborating, as opposed to private emails and meetings
-* Represent the SIG for the PM group:
- * identify all features in the current release from the SIG
- * track all features (in the repo with all the fields complete)
- * attend your SIG meetings
- * attend the PM group meetings which occur 3-5 times per release
- * identify the annual roadmap
- * advise their SIG as needed
+[Creative Commons License version 4.0](https://git.k8s.io/website/LICENSE).
 
 # CLA
 
 All contributors must sign the CNCF CLA, as described [here](CLA.md).
+
+[community membership]: /community-membership.md
+[sig governance]: /sig-governance.md
+[owners]: community-membership.md#subproject-owner
+[short template]: committee-steering/governance/sig-governance-template-short.md
 
 [![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/governance.md?pixel)]()

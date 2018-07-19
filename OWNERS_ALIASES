@@ -1,0 +1,136 @@
+aliases:
+  sig-api-machinery-leads:
+    - lavalamp
+    - deads2k
+  sig-apps-leads:
+    - mattfarina
+    - prydonius
+    - kow3ns
+  sig-architecture-leads:
+    - bgrant0607
+    - jdumars
+  sig-auth-leads:
+    - ericchiang
+    - liggitt
+    - tallclair
+  sig-autoscaling-leads:
+    - mwielgus
+    - directxman12
+  sig-aws-leads:
+    - justinsb
+    - kris-nova
+    - countspongebob
+  sig-azure-leads:
+    - slack
+    - colemickens
+    - jdumars
+  sig-big-data-leads:
+    - foxish
+    - erikerlandson
+  sig-cli-leads:
+    - soltysh
+    - pwittrock
+    - AdoHe
+  sig-cluster-lifecycle-leads:
+    - lukemarsden
+    - roberthbailey
+    - luxas
+    - timothysc
+  sig-cluster-ops-leads:
+    - zehicle
+    - jdumars
+  sig-contributor-experience-leads:
+    - grodrigues3
+    - Phillels
+    - parispittman
+  sig-docs-leads:
+    - zacharysarah
+    - chenopis
+    - jaredbhatti
+  sig-gcp-leads:
+    - abgworrall
+  sig-instrumentation-leads:
+    - piosz
+    - brancz
+  sig-multicluster-leads:
+    - csbell
+    - quinton-hoole
+  sig-network-leads:
+    - thockin
+    - dcbw
+    - caseydavenport
+  sig-node-leads:
+    - dchen1107
+    - derekwaynecarr
+  sig-on-premise-leads:
+    - marcoceppi
+    - dghubble
+  sig-openstack-leads:
+    - hogepodge
+    - dklyle
+    - rjmorse
+  sig-product-management-leads:
+    - apsinha
+    - idvoretskyi
+    - calebamiles
+  sig-release-leads:
+    - jdumars
+    - calebamiles
+  sig-scalability-leads:
+    - wojtek-t
+    - countspongebob
+  sig-scheduling-leads:
+    - bsalamat
+    - timothysc
+  sig-service-catalog-leads:
+    - pmorie
+    - arschles
+    - vaikas-google
+    - duglin
+  sig-storage-leads:
+    - saad-ali
+    - childsb
+  sig-testing-leads:
+    - spiffxp
+    - fejta
+    - stevekuznetsov
+    - timothysc
+  sig-ui-leads:
+    - danielromlein
+    - floreks
+  sig-windows-leads:
+    - michmike
+  wg-app-def-leads:
+    - ant31
+    - bryanl
+    - garethr
+  wg-cloud-provider-leads:
+    - wlan0
+    - jagosan
+  wg-cluster-api-leads:
+    - kris-nova
+    - roberthbailey
+  wg-container-identity-leads:
+    - smarterclayton
+    - destijl
+  wg-kubeadm-adoption-leads:
+    - luxas
+    - justinsb
+  wg-machine-learning-leads:
+    - vishh
+    - kow3ns
+  wg-multitenancy-leads:
+    - davidopp
+    - jessfraz
+  wg-policy-leads:
+    - hannibalhuang
+    - tsandall
+    - davidopp
+    - smarterclayton
+    - xuanjia
+  wg-resource-management-leads:
+    - vishh
+    - derekwaynecarr
+## BEGIN CUSTOM CONTENT
+
+## END CUSTOM CONTENT

@@ -1,14 +1,14 @@
 API Conventions
 ===============
 
-Updated: 2/23/2017
+Updated: 3/7/2017
 
 *This document is oriented at users who want a deeper understanding of the
 Kubernetes API structure, and developers wanting to extend the Kubernetes API.
-An introduction to using resources with kubectl can be found in [the object management overview](https://kubernetes.io/docs/concepts/tools/kubectl/object-management-overview/).*
+An introduction to using resources with kubectl can be found in [the object management overview](https://kubernetes.io/docs/tutorials/object-management-kubectl/object-management/).*
 
 **Table of Contents**
-<!-- BEGIN MUNGE: GENERATED_TOC -->
+
 
   - [Types (Kinds)](#types-kinds)
     - [Resources](#resources)
@@ -26,11 +26,6 @@ An introduction to using resources with kubectl can be found in [the object mana
   - [Verbs on Resources](#verbs-on-resources)
     - [PATCH operations](#patch-operations)
       - [Strategic Merge Patch](#strategic-merge-patch)
-    - [List Operations](#list-operations)
-      - [List of Maps](#list-of-maps)
-      - [List of Primitives](#list-of-primitives)
-        - [Unordered Set](#unordered-set)
-    - [Map Operations](#map-operations)
   - [Idempotency](#idempotency)
   - [Optional vs. Required](#optional-vs-required)
   - [Defaulting](#defaulting)
@@ -50,7 +45,6 @@ An introduction to using resources with kubectl can be found in [the object mana
   - [WebSockets and SPDY](#websockets-and-spdy)
   - [Validation](#validation)
 
-<!-- END MUNGE: GENERATED_TOC -->
 
 The conventions of the [Kubernetes API](https://kubernetes.io/docs/api/) (and related APIs in the
 ecosystem) are intended to ease client development and ensure that configuration
@@ -74,7 +68,7 @@ kinds would have different attributes and properties)
 via HTTP to the server. Resources are exposed via:
   * Collections - a list of resources of the same type, which may be queryable
   * Elements - an individual resource, addressable via a URL
-* **API Group** a set of resources that are exposed together at the same. Along
+* **API Group** a set of resources that are exposed together. Along
 with the version is exposed in the "apiVersion" field as "GROUP/VERSION", e.g.
 "policy.k8s.io/v1".
 
@@ -161,7 +155,7 @@ is independent of the specific resource schema.
 
    Two additional subresources, `proxy` and `portforward`, provide access to
 cluster resources as described in
-[accessing the cluster docs](https://kubernetes.io/docs/user-guide/accessing-the-cluster/).
+[accessing the cluster](https://kubernetes.io/docs/user-guide/accessing-the-cluster/).
 
 The standard REST verbs (defined below) MUST return singular JSON objects. Some
 API endpoints may deviate from the strict REST pattern and return resources that
@@ -230,14 +224,17 @@ an object was created
 after which this resource will be deleted. This field is set by the server when
 a graceful deletion is requested by the user, and is not directly settable by a
 client. The resource will be deleted (no longer visible from resource lists, and
-not reachable by name) after the time in this field. Once set, this value may
-not be unset or be set further into the future, although it may be shortened or
-the resource may be deleted prior to this time.
+not reachable by name) after the time in this field except when the object has
+a finalizer set. In case the finalizer is set the deletion of the object is
+postponed at least until the finalizer is removed.
+Once the deletionTimestamp is set, this value may not be unset or be set further
+into the future, although it may be shortened or the resource may be deleted
+prior to this time.
 * labels: a map of string keys and values that can be used to organize and
 categorize objects (see [the labels docs](https://kubernetes.io/docs/user-guide/labels/))
 * annotations: a map of string keys and values that can be used by external
 tooling to store and retrieve arbitrary metadata about this object (see
-[the annotations docs](https://kubernetes.io/docs/user-guide/annotations/)
+[the annotations docs](https://kubernetes.io/docs/user-guide/annotations/))
 
 Labels are intended for organizational purposes by end users (select the pods
 that match this label query). Annotations enable third-party automation and
@@ -319,9 +316,13 @@ following fields, but must contain at least `type` and `status` fields:
 ```go
   Type               FooConditionType  `json:"type" description:"type of Foo condition"`
   Status             ConditionStatus   `json:"status" description:"status of the condition, one of True, False, Unknown"`
+  // +optional
   LastHeartbeatTime  unversioned.Time  `json:"lastHeartbeatTime,omitempty" description:"last time we got an update on a given condition"`
+  // +optional
   LastTransitionTime unversioned.Time  `json:"lastTransitionTime,omitempty" description:"last time the condition transit from one status to another"`
+  // +optional
   Reason             string            `json:"reason,omitempty" description:"one-word CamelCase reason for the condition's last transition"`
+  // +optional
   Message            string            `json:"message,omitempty" description:"human-readable message indicating details about last transition"`
 ```
 
@@ -351,7 +352,7 @@ Some resources in the v1 API contain fields called **`phase`**, and associated
 `message`, `reason`, and other status fields. The pattern of using `phase` is
 deprecated. Newer API types should use conditions instead. Phase was essentially
 a state-machine enumeration field, that contradicted
-[system-design principles](../design-proposals/principles.md#control-logic) and hampered
+[system-design principles](../design-proposals/architecture/principles.md#control-logic) and hampered
 evolution, since [adding new enum values breaks backward
 compatibility](api_changes.md). Rather than encouraging clients to infer
 implicit properties from phases, we intend to explicitly expose the conditions
@@ -375,7 +376,7 @@ only provided with reasonable effort, and is not guaranteed to not be lost.
 Status information that may be large (especially proportional in size to
 collections of other resources, such as lists of references to other objects --
 see below) and/or rapidly changing, such as
-[resource usage](../design-proposals/resources.md#usage-data), should be put into separate
+[resource usage](../design-proposals/scheduling/resources.md#usage-data), should be put into separate
 objects, with possibly a reference from the original object. This helps to
 ensure that GETs and watch remain reasonably efficient for the majority of
 clients, which may not need that data.
@@ -434,21 +435,25 @@ selectors, annotations, data), as opposed to sets of subobjects.
 #### Primitive types
 
 * Avoid floating-point values as much as possible, and never use them in spec.
-Floating-point values cannot be reliably round-tripped (encoded and re-decoded)
-without changing, and have varying precision and representations across
-languages and architectures.
+  Floating-point values cannot be reliably round-tripped (encoded and
+  re-decoded) without changing, and have varying precision and representations
+  across languages and architectures.
 * All numbers (e.g., uint32, int64) are converted to float64 by Javascript and
-some other languages, so any field which is expected to exceed that either in
-magnitude or in precision (specifically integer values > 53 bits) should be
-serialized and accepted as strings.
+  some other languages, so any field which is expected to exceed that either in
+  magnitude or in precision (specifically integer values > 53 bits) should be
+  serialized and accepted as strings.
 * Do not use unsigned integers, due to inconsistent support across languages and
-libraries. Just validate that the integer is non-negative if that's the case.
+  libraries. Just validate that the integer is non-negative if that's the case.
 * Do not use enums. Use aliases for string instead (e.g., `NodeConditionType`).
 * Look at similar fields in the API (e.g., ports, durations) and follow the
-conventions of existing fields.
+  conventions of existing fields.
 * All public integer fields MUST use the Go `(u)int32` or Go `(u)int64` types,
-not `(u)int` (which is ambiguous depending on target platform). Internal types
-may use `(u)int`.
+  not `(u)int` (which is ambiguous depending on target platform). Internal
+  types may use `(u)int`.
+* Think twice about `bool` fields. Many ideas start as boolean but eventually
+  trend towards a small set of mutually exclusive options.  Plan for future
+  expansions by describing the policy options explicitly as a string type
+  alias (e.g. `TerminationMessagePolicy`).
 
 #### Constants
 
@@ -528,7 +533,7 @@ overrides a default grace period, including the zero grace period ("now").
 * PUT /&lt;resourceNamePlural&gt;/&lt;name&gt; - Update or create the resource
 with the given name with the JSON object provided by the client.
 * PATCH /&lt;resourceNamePlural&gt;/&lt;name&gt; - Selectively modify the
-specified fields of the resource. See more information [below](#patch).
+specified fields of the resource. See more information [below](#patch-operations).
 * GET /&lt;resourceNamePlural&gt;&amp;watch=true - Receive a stream of JSON
 objects corresponding to changes made to any resource of the given kind over
 time.
@@ -555,172 +560,7 @@ below.
 
 #### Strategic Merge Patch
 
-In the standard JSON merge patch, JSON objects are always merged but lists are
-always replaced. Often that isn't what we want. Let's say we start with the
-following Pod:
-
-```yaml
-spec:
-  containers:
-    - name: nginx
-      image: nginx-1.0
-```
-
-...and we POST that to the server (as JSON). Then let's say we want to *add* a
-container to this Pod.
-
-```yaml
-PATCH /api/v1/namespaces/default/pods/pod-name
-spec:
-  containers:
-    - name: log-tailer
-      image: log-tailer-1.0
-```
-
-If we were to use standard Merge Patch, the entire container list would be
-replaced with the single log-tailer container. However, our intent is for the
-container lists to merge together based on the `name` field.
-
-To solve this problem, Strategic Merge Patch uses the go struct tag of the API
-objects to determine what lists should be merged and which ones should not.
-Currently the metadata is available as struct tags on the API objects
-themselves, but will become available to clients as Swagger annotations in the
-future. In the above example, the `patchStrategy` metadata for the `containers`
-field would be `merge` and the `patchMergeKey` would be `name`.
-
-Note: If the patch results in merging two lists of primitives, the primitives are
-first deduplicated and then merged.
-
-Strategic Merge Patch also supports special operations as listed below.
-
-### List Operations
-
-#### List of Maps
-
-To override the container list to be strictly replaced, regardless of the
-default:
-
-```yaml
-containers:
-  - name: nginx
-    image: nginx-1.0
-  - $patch: replace   # any further $patch operations nested in this list will be ignored
-```
-
-To delete an element of a list that should be merged:
-
-```yaml
-containers:
-  - name: nginx
-    image: nginx-1.0
-  - $patch: delete
-    name: log-tailer  # merge key and value goes here
-```
-
-Delete operation will delete the first entry in the list that match the merge key.
-But there is validation to make sure no 2 entries with the same merge key will get in the list.
-
-#### List of Primitives
-
-We have two patch strategies for lists of primitives: replace and merge.
-Replace is the default patch strategy, which will replace the whole list on update and it will preserve the order;
-while merge strategy works as an unordered set. In this section, we call a primitive list with merge strategy an unordered set.
-The patch strategy is defined in the go struct tag of the API objects,
-e.g. `finalizers` uses `merge` as patch strategy.
-```go
-Finalizers []string `json:"finalizers,omitempty" patchStrategy:"merge" protobuf:"bytes,14,rep,name=finalizers"`
-```
-
-##### Unordered Set
-
-There are 3 operations: add, delete, replace.
-
-Suppose we have defined a `finalizers` and we call it the original finalizers:
-
-```yaml
-finalizers:
-  - a
-  - b
-  - c
-```
-
-1) To add items in a set, we use the list name as the key.
-e.g. to add items "d" and "e" in the original finalizers, the patch will be:
-
-```yaml
-finalizers:
-  - d
-  - e
-```
-
-After applying the patch on the original finalizers, it will become:
-
-```yaml
-finalizers:
-  - a
-  - b
-  - c
-  - d
-  - e
-```
-
-2) To delete items in a set, we use a parallel list with key: `$deleteFromPrimitiveList/\<keyOfPrimitiveList\>`.
-e.g. to delete items "b" and "c" from the original finalizers, the patch will be:
-
-```yaml
-$deleteFromPrimitiveList/finalizers:
-  - b
-  - c
-```
-
-After applying the patch on the original finalizers, it will become:
-
-```yaml
-finalizers:
-  - a
-```
-
-In an erroneous case, the set may be created with duplicates. Deleting an item that has duplicates will delete all matching items.
-
-3) Replace can be fulfilled by an addition and a deletion.
-e.g. to replace "a" with "x" in the original finalizers, the patch will be:
-
-```yaml
-$deleteFromPrimitiveList/finalizers:
-  - a
-finalizers:
-  - x
-```
-
-After applying the patch on the original finalizers, it will become:
-
-```yaml
-finalizers:
-  - x
-  - b
-  - c
-```
-
-### Map Operations
-
-To indicate that a map should not be merged and instead should be taken literally:
-
-```yaml
-$patch: replace  # recursive and applies to all fields of the map it's in
-containers:
-- name: nginx
-  image: nginx-1.0
-```
-
-To delete a field of a map:
-
-```yaml
-name: nginx
-image: nginx-1.0
-labels:
-  live: null  # set the value of the map key to null
-```
-
+Details of Strategic Merge Patch are covered [here](strategic-merge-patch.md).
 
 ## Idempotency
 
@@ -749,21 +589,32 @@ Fields must be either optional or required.
 
 Optional fields have the following properties:
 
-- They have `omitempty` struct tag in Go.
+- They have the `+optional` comment tag in Go.
 - They are a pointer type in the Go definition (e.g. `bool *awesomeFlag`) or
 have a built-in `nil` value (e.g. maps and slices).
 - The API server should allow POSTing and PUTing a resource with this field
 unset.
 
+In most cases, optional fields should also have the `omitempty` struct tag (the 
+`omitempty` option specifies that the field should be omitted from the json
+encoding if the field has an empty value). However, If you want to have 
+different logic for an optional field which is not provided vs. provided with 
+empty values, do not use `omitempty` (e.g. https://github.com/kubernetes/kubernetes/issues/34641).
+
+Note that for backward compatibility, any field that has the `omitempty` struct
+tag will considered to be optional but this may change in future and having
+the `+optional` comment tag is highly recommended.
+
 Required fields have the opposite properties, namely:
 
+- They do not have an `+optional` comment tag.
 - They do not have an `omitempty` struct tag.
 - They are not a pointer type in the Go definition (e.g. `bool otherFlag`).
 - The API server should not allow POSTing or PUTing a resource with this field
 unset.
 
-Using the `omitempty` tag causes swagger documentation to reflect that the field
-is optional.
+Using the `+optional` or the `omitempty` tag causes OpenAPI documentation to 
+reflect that the field is optional.
 
 Using a pointer allows distinguishing unset from the zero value for that type.
 There are some cases where, in principle, a pointer is not needed for an
@@ -839,7 +690,7 @@ read/modify/write cycle, by verifying that the current value of resourceVersion
 matches the specified value.
 
 The resourceVersion is currently backed by [etcd's
-modifiedIndex](https://coreos.com/docs/distributed-configuration/etcd-api/).
+modifiedIndex](https://coreos.com/etcd/docs/latest/v2/api.html).
 However, it's important to note that the application should *not* rely on the
 implementation details of the versioning system maintained by Kubernetes. We may
 change the implementation of resourceVersion in the future, such as to change it
@@ -1293,6 +1144,8 @@ be called `fooName`. The name of a field referring to another resource of kind
 `Foo` by ObjectReference (or subset thereof) should be called `fooRef`.
 * More generally, include the units and/or type in the field name if they could
 be ambiguous and they are not specified by the value or value type.
+* The name of a field expressing a boolean property called 'fooable' should be
+called `Fooable`, not `IsFooable`.
 
 ## Label, selector, and annotation conventions
 
@@ -1377,10 +1230,11 @@ policy field. The "name" portion of the annotation should follow the below
 conventions for annotations. When an annotation gets promoted to a field, the
 name transformation should then be mechanical: `foo-bar` becomes `fooBar`.
 
-Other advice regarding use of labels, annotations, and other generic map keys by
+Other advice regarding use of labels, annotations, taints, and other generic map keys by
 Kubernetes components and tools:
-  - Key names should be all lowercase, with words separated by dashes, such as
-`desired-replicas`
+  - Key names should be all lowercase, with words separated by dashes instead of camelCase
+    - For instance, prefer `foo.kubernetes.io/foo-bar` over `foo.kubernetes.io/fooBar`, prefer
+    `desired-replicas` over `DesiredReplicas`
   - Prefix the key with `kubernetes.io/` or `foo.kubernetes.io/`, preferably the
 latter if the label/annotation is specific to `foo`
     - For instance, prefer `service-account.kubernetes.io/name` over
@@ -1389,7 +1243,6 @@ latter if the label/annotation is specific to `foo`
 the resource doesn't need to know about, experimental fields that aren't
 intended to be generally used API fields, etc. Beware that annotations aren't
 automatically handled by the API conversion machinery.
-
 
 ## WebSockets and SPDY
 
@@ -1463,6 +1316,3 @@ be less than 256", "must be greater than or equal to 0".  Do not use words
 like "larger than", "bigger than", "more than", "higher than", etc.
 * When specifying numeric ranges, use inclusive ranges when possible.
 
-<!-- BEGIN MUNGE: GENERATED_ANALYTICS -->
-[![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/docs/devel/api-conventions.md?pixel)]()
-<!-- END MUNGE: GENERATED_ANALYTICS -->
